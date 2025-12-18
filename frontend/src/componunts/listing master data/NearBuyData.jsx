@@ -16,7 +16,7 @@ import {
 } from "@heroicons/react/24/solid";
 
 import { listingData } from "@/data/listingJSON";
-import * as XLSX from "xlsx/dist/xlsx.full.min";
+import * as XLSX from "xlsx/dist/xlsx.full.min.js";
 
 const defaultColumns = [
   { key: "name", label: "Name", width: 220 },

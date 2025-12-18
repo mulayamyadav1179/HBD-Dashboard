@@ -1,251 +1,182 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Card,
   CardBody,
-  CardFooter,
   Typography,
   Button,
 } from "@material-tailwind/react";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import {
+  ArchiveBoxIcon,
+  MapPinIcon,
+  TagIcon,
+  ArrowLongRightIcon,
+  ServerStackIcon,
+  GlobeAmericasIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/solid";
 import api from "../utils/Api";
 
 export function Dasboard2() {
-  const [productscount, setProductscount] = useState(0);
-  const [citycount, setCitycount] = useState(0);
-  const [categorycount, setCategorycount] = useState(0);
+  const [stats, setStats] = useState({
+    productCount: 0,
+    cityCount: 0,
+    categoryCount: 0,
+    loading: true,
+  });
 
-  // static product data count
-  const productDataCount = 1200000;
+  const staticData = {
+    totalScrapped: 1200000,
+  };
 
   useEffect(() => {
+    const fetchProductsData = async () => {
+      try {
+        const response = await api.get("/googlemap_data");
+        const products = response.data;
+
+        const uniqueCities = new Set(products.map((p) => p.city)).size;
+        const uniqueCategories = new Set(products.map((p) => p.category)).size;
+
+        setStats({
+          productCount: products.length,
+          cityCount: uniqueCities,
+          categoryCount: uniqueCategories,
+          loading: false,
+        });
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setStats((prev) => ({ ...prev, loading: false }));
+      }
+    };
+
     fetchProductsData();
   }, []);
 
-  const fetchProductsData = async () => {
-    try {
-      const response = await api.get("/googlemap_data");
-      const products = response.data;
-
-      // Extract unique cities
-      const citys = products.map((product) => product.city);
-      const uniqueCities = [...new Set(citys)];
-      setCitycount(uniqueCities.length);
-
-      // Extract unique categories
-      const categories = products.map((product) => product.category);
-      const uniqueCategories = [...new Set(categories)];
-      setCategorycount(uniqueCategories.length);
-
-      // product counter
-      setProductscount(response.data.length);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
-
-  // total count = product data + listing data
-  const totalCount = productDataCount + productscount;
+  const DashboardCard = ({ title, value, icon: Icon, color, link, subValue }) => (
+    <Card className="relative overflow-hidden border border-white/10 bg-gradient-to-br from-gray-900 to-gray-800 shadow-xl transition-transform hover:scale-[1.02] duration-300">
+      <CardBody className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <Typography variant="h5" color="white" className="mb-1 font-semibold tracking-wide">
+              {title}
+            </Typography>
+            <Typography className="font-normal text-gray-400 text-sm">
+              {subValue || "Updated recently"}
+            </Typography>
+          </div>
+          <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${color} shadow-lg ring-1 ring-white/10`}>
+            <Icon className="h-6 w-6 text-white" />
+          </div>
+        </div>
+        
+        <div className="flex items-end justify-between mt-4">
+          <Typography variant="h2" color="white" className="font-bold">
+            {stats.loading ? "..." : value?.toLocaleString()}
+          </Typography>
+          
+          {link && (
+            <Link to={link}>
+              <Button size="sm" variant="text" color="white" className="flex items-center gap-2 group hover:bg-white/10 p-2">
+                View More
+                <ArrowLongRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+          )}
+        </div>
+      </CardBody>
+    </Card>
+  );
 
   return (
-    <>
-      {/* 🔝 Top Section - Total Count */}
-      <div className="w-full px-4 mt-6">
-        <Card className="w-full bg-gradient-to-r from-gray-400 to-gray-300 shadow-lg">
-          <CardBody className="text-center">
-            <Typography variant="h2" color="blue-gray" className="mb-2">
-              Total Data Count
+    <div className="mt-10 flex w-full flex-col gap-6 min-h-screen pb-10">
+      
+      <Card className="relative w-full overflow-hidden border border-white/10 bg-gradient-to-r from-gray-600 to-gray-900 shadow-2xl">
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-blue-500/20 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-32 w-32 rounded-full bg-purple-500/20 blur-3xl"></div>
+        
+        <CardBody className="flex flex-col items-center justify-center p-10 text-center z-10 relative">
+          <div className="mb-4 p-3 bg-white/5 rounded-full ring-1 ring-white/10">
+            <ServerStackIcon className="h-10 w-10 text-blue-400" />
+          </div>
+          <Typography variant="h1" color="white" className="mb-2 font-black tracking-tight">
+             {(staticData.totalScrapped + stats.productCount).toLocaleString()}
+          </Typography>
+          <Typography variant="h5" className="font-medium text-blue-gray-200 uppercase tracking-widest opacity-80">
+            Total Data Count
+          </Typography>
+        </CardBody>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <DashboardCard
+          title="Cities Scrapped"
+          value={stats.cityCount}
+          icon={MapPinIcon}
+          color="from-purple-500 to-indigo-600"
+          link="/dashboard/cities-report"
+        />
+        <DashboardCard
+          title="Categories Scrapped"
+          value={stats.categoryCount}
+          icon={TagIcon}
+          color="from-pink-500 to-rose-600"
+          link="/dashboard/categories-report"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <DashboardCard
+          title="Product Data"
+          subValue="Global Historical Records"
+          value={staticData.totalScrapped}
+          icon={GlobeAmericasIcon}
+          color="from-blue-500 to-blue-600"
+          link="/dashboard/productdata-report"
+        />
+
+        <DashboardCard
+          title="Listing Data"
+          subValue="Live Google Maps API"
+          value={stats.productCount}
+          icon={ArchiveBoxIcon}
+          color="from-emerald-400 to-emerald-600"
+          link="/dashboard/listingdata-report"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="border border-white/5 bg-gradient-to-r from-gray-600 to-gray-900">
+          <CardBody className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <ChartBarIcon className="h-5 w-5 text-green-500" />
+              <Typography className="font-medium text-white">Total Category Scrapped</Typography>
+            </div>
+            <Typography variant="h4" color="white" className="font-bold">
+              {stats.categoryCount}
             </Typography>
-            <Typography variant="h3" color="gray" className="mt-2 mb-6">
-              {totalCount}
+          </CardBody>
+        </Card>
+
+        <Card className="border border-white/5 bg-gradient-to-r from-gray-600 to-gray-900">
+          <CardBody className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <ChartBarIcon className="h-5 w-5 text-green-500" />
+              <Typography className="font-medium text-white">Total Area Scrapped</Typography>
+            </div>
+            <Typography variant="h4" color="white" className="font-bold">
+              {stats.cityCount}
             </Typography>
           </CardBody>
         </Card>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-        {/* Left Section - Product Data */}
-        <Card className="w-full  bg-gradient-to-r from-gray-400 to-gray-300 shadow-lg ">
-          <CardBody>
-            <Typography variant="h2" color="blue-gray" className="mb-2">
-              Cities Scrapped
-            </Typography>
-            <Typography variant="h3" color="gray" className="mt-2">
-              {productDataCount}
-            </Typography>
-          </CardBody>
-          <CardFooter className="pt-0">
-            <Link to="/dashboard/productdata-report" className="inline-block">
-              <Button size="sm" variant="text" className="flex items-center gap-2">
-                View More
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"
-                  />
-                </svg>
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
 
-        {/* Right Section - Listing Data */}
-        <Card className="w-full bg-gradient-to-r from-gray-400 to-gray-300 shadow-lg ">
-          <CardBody>
-            <Typography variant="h2" color="blue-gray" className="mb-2">
-              Categories Scrapped
-            </Typography>
-            <Typography variant="h3" color="gray" className="mt-2">
-              {productscount}
-            </Typography>
-          </CardBody>
-          <CardFooter className="pt-0">
-            <Link to="/dashboard/listingdata-report" className="inline-block">
-              <Button size="sm" variant="text" className="flex items-center gap-2">
-                View More
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"
-                  />
-                </svg>
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      </div>
-
-      {/* Existing Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-        {/* Left Section - Product Data */}
-        <div className="left p-5 rounded bg-gradient-to-r from-gray-300 to-gray-200 shadow-lg">
-          <Card className="w-full bg-gradient-to-r from-gray-200 to-gray-100 shadow-lg">
-            <CardBody>
-              <Typography variant="h2" color="blue-gray" className="mb-2">
-                Product Data
-              </Typography>
-              <Typography variant="h3" color="gray" className="mt-2">
-                {productDataCount}
-              </Typography>
-            </CardBody>
-            <CardFooter className="pt-0">
-              <Link to="/dashboard/productdata-report" className="inline-block">
-                <Button size="sm" variant="text" className="flex items-center gap-2">
-                  View More
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"
-                    />
-                  </svg>
-                </Button>
-              </Link>
-            </CardFooter>
-          </Card>
-          <Card className="w-full m-1">
-            <CardBody>
-              <Typography variant="h5" color="blue-gray" className="mb-2">
-                Total Category scrapped
-              </Typography>
-              <Typography variant="h3" color="gray" className="mt-2">
-                {categorycount}
-              </Typography>
-            </CardBody>
-          </Card>
-          <Card className="w-full m-1">
-            <CardBody>
-              <Typography variant="h5" color="blue-gray" className="mb-2">
-                Total Category scrapped
-              </Typography>
-              <Typography variant="h3" color="gray" className="mt-2">
-                {citycount}
-              </Typography>
-            </CardBody>
-          </Card>
-        </div>
-
-        {/* Right Section - Listing Data */}
-        <div className="right p-5 rounded bg-gradient-to-r from-gray-300 to-gray-200 shadow-lg">
-          <Card className="w-full bg-gradient-to-r from-gray-200 to-gray-100 shadow-lg">
-            <CardBody>
-              <Typography variant="h2" color="blue-gray" className="mb-2">
-                Listing Data
-              </Typography>
-              <Typography variant="h3" color="gray" className="mt-2">
-                {productscount}
-              </Typography>
-            </CardBody>
-            <CardFooter className="pt-0">
-              <Link to="/dashboard/listingdata-report" className="inline-block">
-                <Button size="sm" variant="text" className="flex items-center gap-2">
-                  View More
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"
-                    />
-                  </svg>
-                </Button>
-              </Link>
-            </CardFooter>
-          </Card>
-
-          {/* Additional Info Cards */}
-          <Card className="w-full m-1">
-            <CardBody>
-              <Typography variant="h5" color="blue-gray" className="mb-2">
-                Total Area scrapped
-              </Typography>
-              <Typography variant="h3" color="gray" className="mt-2">
-                {citycount}
-              </Typography>
-            </CardBody>
-          </Card>
-
-
-          <Card className="w-full m-1">
-            <CardBody>
-              <Typography variant="h5" color="blue-gray" className="mb-2">
-                Total Area scrapped
-              </Typography>
-              <Typography variant="h3" color="gray" className="mt-2">
-                {categorycount}
-              </Typography>
-            </CardBody>
-          </Card>
-        </div>
-      </div>
-    </>
+      <footer className="mt-auto pt-6 border-t border-white/10 text-center md:text-left">
+        <Typography variant="small" className="font-normal text-white/40">
+          &copy; {new Date().getFullYear()} ScrapeMaster Dashboard. All Rights Reserved.
+        </Typography>
+      </footer>
+    </div>
   );
 }
 
