@@ -16,7 +16,7 @@ import {
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/solid";
 import { productData } from "@/data/productJSON";
-import * as XLSX from "xlsx/dist/xlsx.full.min";
+import * as XLSX from "xlsx/dist/xlsx.full.min.js";
 
 const defaultColumns = [
   { key: "ID", label: "ID", width: 150 },
